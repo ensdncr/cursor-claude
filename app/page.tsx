@@ -7,53 +7,49 @@ import PwaBanner from '@/components/PwaBanner'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>(resolve => setTimeout(() => resolve(fallback), ms)),
+  ])
+}
+
+async function fetchProducts() {
+  const supabase = createServiceClient()
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data: activeCatalogs } = await supabase
+    .from('catalogs')
+    .select('id')
+    .gte('valid_until', today)
+
+  if (!activeCatalogs || activeCatalogs.length === 0) return FALLBACK_PRODUCTS
+
+  const catalogIds = activeCatalogs.map((c: { id: string }) => c.id)
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('*, market:markets(name, color_hex), catalog:catalogs(valid_until, valid_from, title)')
+    .in('catalog_id', catalogIds)
+    .order('created_at', { ascending: false })
+
+  if (error || !data || data.length === 0) return FALLBACK_PRODUCTS
+  return data
+}
+
+async function fetchMarkets() {
+  const supabase = createServiceClient()
+  const { data } = await supabase.from('markets').select('*').order('name')
+  if (!data || data.length === 0) return FALLBACK_MARKETS
+  return data
+}
+
 async function getActiveProducts() {
-  try {
-    const supabase = createServiceClient()
-    const today = new Date().toISOString().split('T')[0]
-
-    // First get active catalog IDs, then fetch products
-    const { data: activeCatalogs } = await supabase
-      .from('catalogs')
-      .select('id')
-      .gte('valid_until', today)
-
-    if (!activeCatalogs || activeCatalogs.length === 0) {
-      return FALLBACK_PRODUCTS
-    }
-
-    const catalogIds = activeCatalogs.map(c => c.id)
-
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        market:markets(name, color_hex),
-        catalog:catalogs(valid_until, valid_from, title)
-      `)
-      .in('catalog_id', catalogIds)
-      .order('created_at', { ascending: false })
-
-    if (error || !data || data.length === 0) {
-      // Fallback to seed data when Supabase is unreachable or empty
-      return FALLBACK_PRODUCTS
-    }
-
-    return data
-  } catch {
-    return FALLBACK_PRODUCTS
-  }
+  return withTimeout(fetchProducts(), 2500, FALLBACK_PRODUCTS)
 }
 
 async function getMarkets() {
-  try {
-    const supabase = createServiceClient()
-    const { data } = await supabase.from('markets').select('*').order('name')
-    if (!data || data.length === 0) return FALLBACK_MARKETS
-    return data
-  } catch {
-    return FALLBACK_MARKETS
-  }
+  return withTimeout(fetchMarkets(), 2500, FALLBACK_MARKETS)
 }
 
 const MARKETS_INFO = [
@@ -93,8 +89,6 @@ export default async function HomePage() {
           <p className="text-gray-500 text-base sm:text-lg mb-8">
             BİM, A101 ve ŞOK&apos;un kampanyalı ürünleri tek yerde
           </p>
-
-          {/* Market pills */}
           <div className="flex justify-center gap-4 flex-wrap">
             {MARKETS_INFO.map(m => (
               <div
@@ -126,7 +120,6 @@ export default async function HomePage() {
         </div>
       </footer>
 
-      {/* PWA Banner */}
       <PwaBanner />
     </div>
   )

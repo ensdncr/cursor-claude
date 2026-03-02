@@ -1,18 +1,24 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+
 interface DaysBadgeProps {
   validUntil: string
 }
 
 export default function DaysBadge({ validUntil }: DaysBadgeProps) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const end = new Date(validUntil)
-  end.setHours(0, 0, 0, 0)
-  const diffTime = end.getTime() - today.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  const [diffDays, setDiffDays] = useState<number | null>(null)
 
-  if (diffDays < 0) return null
+  useEffect(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const end = new Date(validUntil)
+    end.setHours(0, 0, 0, 0)
+    const diffTime = end.getTime() - today.getTime()
+    setDiffDays(Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
+  }, [validUntil])
+
+  if (diffDays === null || diffDays < 0) return null
 
   let colorClass = ''
   let label = ''
