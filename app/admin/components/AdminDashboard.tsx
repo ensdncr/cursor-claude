@@ -6,7 +6,7 @@ import CatalogList from './CatalogList'
 
 interface Stats {
   activeCatalogs: number
-  totalProducts: number
+  totalCatalogs: number
   expiringThisWeek: number
 }
 
@@ -110,9 +110,9 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   color="text-blue-400"
                 />
                 <StatCard
-                  icon="🛒"
-                  label="Toplam Ürün"
-                  value={stats?.totalProducts ?? 0}
+                  icon="📁"
+                  label="Toplam Katalog"
+                  value={stats?.totalCatalogs ?? 0}
                   color="text-green-400"
                 />
                 <StatCard

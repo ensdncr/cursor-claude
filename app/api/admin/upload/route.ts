@@ -27,23 +27,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Market bulunamadı' }, { status: 404 })
     }
 
-    // Upload file to Supabase Storage
-    const ext = file.name.split('.').pop()
+    // Determine file type
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+    const fileType = isPdf ? 'pdf' : 'image'
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
     const fileName = `${market.toLowerCase()}-${Date.now()}.${ext}`
     const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
 
-    let fileUrl = ''
+    let fileUrl: string | null = null
 
     const { error: uploadError } = await supabase.storage
       .from('catalogs')
-      .upload(fileName, buffer, {
+      .upload(fileName, Buffer.from(bytes), {
         contentType: file.type,
         upsert: false,
       })
 
     if (uploadError) {
-      // If storage bucket doesn't exist yet, proceed without file URL
       console.warn('Storage upload failed:', uploadError.message)
     } else {
       const { data: urlData } = supabase.storage.from('catalogs').getPublicUrl(fileName)
@@ -58,7 +58,8 @@ export async function POST(req: NextRequest) {
         title,
         valid_from: validFrom,
         valid_until: validUntil,
-        source_file_url: fileUrl || null,
+        file_url: fileUrl,
+        file_type: fileType,
       })
       .select('id')
       .single()
@@ -67,10 +68,7 @@ export async function POST(req: NextRequest) {
       throw catalogError || new Error('Katalog oluşturulamadı')
     }
 
-    return NextResponse.json({
-      catalogId: catalog.id,
-      fileUrl,
-    })
+    return NextResponse.json({ catalogId: catalog.id, fileUrl })
   } catch (err: any) {
     console.error('Upload error:', err)
     return NextResponse.json({ error: err.message || 'Yükleme başarısız' }, { status: 500 })
