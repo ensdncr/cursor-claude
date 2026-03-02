@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase'
+import { FALLBACK_PRODUCTS, FALLBACK_MARKETS } from '@/lib/seed-fallback'
 import ProductGrid from '@/components/ProductGrid'
 import MarketLogo from '@/components/MarketLogo'
 import PwaBanner from '@/components/PwaBanner'
@@ -11,24 +12,36 @@ async function getActiveProducts() {
     const supabase = createServiceClient()
     const today = new Date().toISOString().split('T')[0]
 
+    // First get active catalog IDs, then fetch products
+    const { data: activeCatalogs } = await supabase
+      .from('catalogs')
+      .select('id')
+      .gte('valid_until', today)
+
+    if (!activeCatalogs || activeCatalogs.length === 0) {
+      return FALLBACK_PRODUCTS
+    }
+
+    const catalogIds = activeCatalogs.map(c => c.id)
+
     const { data, error } = await supabase
       .from('products')
       .select(`
         *,
         market:markets(name, color_hex),
-        catalog:catalogs!inner(valid_until, valid_from, title)
+        catalog:catalogs(valid_until, valid_from, title)
       `)
-      .gte('catalogs.valid_until', today)
+      .in('catalog_id', catalogIds)
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching products:', error)
-      return []
+    if (error || !data || data.length === 0) {
+      // Fallback to seed data when Supabase is unreachable or empty
+      return FALLBACK_PRODUCTS
     }
 
-    return data || []
+    return data
   } catch {
-    return []
+    return FALLBACK_PRODUCTS
   }
 }
 
@@ -36,9 +49,10 @@ async function getMarkets() {
   try {
     const supabase = createServiceClient()
     const { data } = await supabase.from('markets').select('*').order('name')
-    return data || []
+    if (!data || data.length === 0) return FALLBACK_MARKETS
+    return data
   } catch {
-    return []
+    return FALLBACK_MARKETS
   }
 }
 
