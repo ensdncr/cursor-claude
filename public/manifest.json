@@ -1,0 +1,44 @@
+{
+  "name": "Aktüel Takip",
+  "short_name": "Aktüel",
+  "description": "BİM, A101 ve ŞOK aktüel ürünlerini takip edin",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F9FAFB",
+  "theme_color": "#FF6B00",
+  "orientation": "portrait-primary",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "lifestyle"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "BİM Aktüeli",
+      "url": "/?market=BİM",
+      "description": "BİM aktüel ürünlerini gör"
+    },
+    {
+      "name": "A101 Aktüeli",
+      "url": "/?market=A101",
+      "description": "A101 aktüel ürünlerini gör"
+    },
+    {
+      "name": "ŞOK Aktüeli",
+      "url": "/?market=ŞOK",
+      "description": "ŞOK aktüel ürünlerini gör"
+    }
+  ]
+}
